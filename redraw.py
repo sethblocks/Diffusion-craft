@@ -1,3 +1,4 @@
+from binascii import Incomplete
 from io import BytesIO
 import io
 import os
@@ -36,8 +37,11 @@ def redraw(url, resize):
 
 
     outputs = []
+    total = rows * columns
 
     for notencoded in notencodedImgs:
+        print("loading tile: " + str(notencodedImgs.index(notencoded) + 1) + " / " + str(total))
+
         tile = cv2.cvtColor(np.asarray(notencoded), cv2.COLOR_RGB2BGR)
 
         
@@ -72,6 +76,7 @@ def redraw(url, resize):
 
         response = Image.open(io.BytesIO(base64.b64decode(requests.post('http://127.0.0.1:7860/sdapi/v1/img2img', json=prompt).json()['images'][0].split(",", 1)[0])))
         outputs.append(response)
+        response.show()
 
     final = Image.new("RGBA", (int(columns * 16 * resize), int(rows * resize * 16)), "#FFFFFF")
     for row in range(int(rows)):
@@ -82,8 +87,9 @@ def redraw(url, resize):
 
 
     print("Finished: " + name + " Path:" + url)
+
     return final
-pngs = []
+
 def findall(pathstr):
     for item in os.listdir(pathstr):
         if os.path.isfile(pathstr + "\\" +item):
@@ -92,10 +98,32 @@ def findall(pathstr):
         else:
             findall(pathstr +"\\" +item)
 
-findall("C:\\Users\\Seth2\\Desktop\\AIcraft\\bedrock-samples\\resource_pack\\textures\\blocks")
 
-for path in pngs:
-    redrawn = redraw(path, 4)
-    if redrawn != Image.new("RGBA", (16 *4, 16*4), "#000000"):
-        pngs.remove(path)
-        redrawn.save(path)
+pngs = []
+try:
+    lines = open("incomplete.txt", "r").readlines()
+    for l in lines:
+        pngs.append(l.removesuffix("\n"))
+except:
+    findall("C:\\Users\\Seth2\\Desktop\\AIcraft\\bedrock-samples\\resource_pack\\textures\\blocks")
+
+
+print(pngs[0])
+
+
+#findall("C:\\Users\\Seth2\\Desktop\\AIcraft\\bedrock-samples\\resource_pack\\textures\\blocks")
+try:
+    for path in pngs:
+        redrawn = redraw(path.removesuffix("\n"), 4)
+        if redrawn != Image.new("RGBA", (16 *4, 16*4), "#000000"):
+            pngs.remove(path)
+            redrawn.save(path.removesuffix("\n"))
+except KeyboardInterrupt:
+    outfile = open("incomplete.txt", "w+")
+    outfile.truncate(0)
+    outwrite = ""
+    for path in pngs:
+        outwrite = outwrite + path + "\n"
+    outwrite.removesuffix("\n")
+    
+    outfile.write(outwrite.removesuffix("\n"))
